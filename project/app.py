@@ -16,7 +16,7 @@ db_config = {
 
 @app.route('/')
 def index():
-    # Serve the HTML Form (optional)
+    # Serve the HTML Form
     return send_file('/root/project/templates/index.html')
 
 
