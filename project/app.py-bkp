@@ -1,0 +1,84 @@
+from flask import Flask, request, jsonify, render_template
+import pymysql
+import subprocess
+import os
+
+app = Flask(__name__)
+
+# DB Config
+DB_CONFIG = {
+    'host': 'localhost',
+    'user': 'catalogue_user',
+    'password': 'Catalogue@123',
+    'database': 'catalogue'
+}
+
+# Home Page - Show Form
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+# Submit Form - Save to DB
+@app.route('/submit', methods=['POST'])
+def submit():
+    data = {
+        'region': request.form.get('REGION'),
+        'instance_type': request.form.get('INSTANCE_TYPE'),
+        'ami_id': request.form.get('AMI_ID'),
+        'instance_count': int(request.form.get('INSTANCE_COUNT')),
+        'security_group': request.form.get('SECURITY_GROUP'),
+        'key_pair': request.form.get('KEY_PAIR'),
+        'subnet_id': request.form.get('SUBNET_ID'),
+        'owner': request.form.get('OWNER'),
+        'project': request.form.get('PROJECT'),
+        'environment': request.form.get('ENVIRONMENT')
+    }
+
+    conn = pymysql.connect(**DB_CONFIG)
+    cursor = conn.cursor()
+
+    query = """
+    INSERT INTO infra_requests
+    (region, instance_type, ami_id, instance_count, security_group, key_pair, subnet_id, owner, project, environment)
+    VALUES (%(region)s, %(instance_type)s, %(ami_id)s, %(instance_count)s, %(security_group)s, %(key_pair)s, %(subnet_id)s, %(owner)s, %(project)s, %(environment)s)
+    """
+    cursor.execute(query, data)
+    conn.commit()
+
+    # Fetch latest record for Terraform
+    cursor.execute("SELECT * FROM infra_requests ORDER BY id DESC LIMIT 1")
+    latest_request = cursor.fetchone()
+
+    conn.close()
+
+    # Generate terraform.tfvars
+    with open('terraform/terraform.tfvars', 'w') as tfvars:
+        tfvars.write(f'''region="{latest_request[1]}"
+instance_type="{latest_request[2]}"
+ami_id="{latest_request[3]}"
+instance_count={latest_request[4]}
+security_group="{latest_request[5]}"
+key_pair="{latest_request[6]}"
+subnet_id="{latest_request[7]}"
+''')
+
+    # Trigger Terraform Apply
+    terraform_dir = os.path.join(os.getcwd(), 'terraform')
+    subprocess.run(["terraform", "init"], cwd=terraform_dir)
+    subprocess.run(["terraform", "apply", "-auto-approve"], cwd=terraform_dir)
+
+    return "EC2 Provisioning Request Submitted and Processed Successfully!"
+
+# Reset DB
+@app.route('/reset-db', methods=['POST'])
+def reset_db():
+    conn = pymysql.connect(**DB_CONFIG)
+    cursor = conn.cursor()
+    cursor.execute("TRUNCATE TABLE infra_requests")
+    conn.commit()
+    conn.close()
+    return jsonify({"message": "Database reset successfully!"})
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)
+
