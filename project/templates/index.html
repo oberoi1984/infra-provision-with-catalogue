@@ -40,7 +40,7 @@
 <div class="container">
     <h2>Provision EC2 Instance</h2>
     <br>
-    <form id="provisionForm">
+    <form id="provisionForm" action="/submit" method="post">
         <label for="region">Region:</label>
         <select name="REGION" id="region" class="form-control">
             <option value="us-east-1">US East (N. Virginia)</option>
@@ -64,13 +64,13 @@
         <input type="number" name="INSTANCE_COUNT" class="form-control" placeholder="Enter Number of Instances" required>
 
         <label>Security Group:</label>
-        <input type="text" name="SECURITY_GROUP" class="form-control" placeholder="Enter Security Group ID" required>
+        <input type="text" name="SECURITY_GROUP" class="form-control" placeholder="Enter Security Group ID">
 
         <label>Key Pair:</label>
-        <input type="text" name="KEY_PAIR" class="form-control" placeholder="Enter Key Pair Name" required>
+        <input type="text" name="KEY_PAIR" class="form-control" placeholder="Enter Key Pair Name">
 
         <label>Subnet ID:</label>
-        <input type="text" name="SUBNET_ID" class="form-control" placeholder="Enter Subnet ID" required>
+        <input type="text" name="SUBNET_ID" class="form-control" placeholder="Enter Subnet ID">
 
         <label>Owner:</label>
         <input type="text" name="OWNER" class="form-control" placeholder="Enter Owner Name" required>

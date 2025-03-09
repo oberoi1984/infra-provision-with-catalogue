@@ -23,29 +23,32 @@ def index():
 @app.route('/submit', methods=['POST'])
 def submit_request():
     if request.is_json:
-        # JSON submission (CURL / API clients)
-        data = request.json
+        data = request.json  # JSON submission (CURL / API clients)
     else:
-        # Form submission (Web form)
         data = {
-            'region': request.form.get('REGION'),
-            'instance_type': request.form.get('INSTANCE_TYPE'),
-            'ami_id': request.form.get('AMI_ID'),
-            'instance_count': request.form.get('INSTANCE_COUNT'),
-            'security_group': request.form.get('SECURITY_GROUP'),
-            'key_pair': request.form.get('KEY_PAIR'),
-            'subnet_id': request.form.get('SUBNET_ID'),
-            'owner': request.form.get('OWNER'),
-            'project': request.form.get('PROJECT'),
-            'environment': request.form.get('ENVIRONMENT')
+            'region': request.form.get('REGION', ''),
+            'instance_type': request.form.get('INSTANCE_TYPE', ''),
+            'ami_id': request.form.get('AMI_ID', ''),
+            'instance_count': request.form.get('INSTANCE_COUNT', '1'),
+            'security_group': request.form.get('SECURITY_GROUP', ""),
+            'key_pair': request.form.get('KEY_PAIR', ""),
+            'subnet_id': request.form.get('SUBNET_ID', ""),
+            'owner': request.form.get('OWNER', ''),
+            'project': request.form.get('PROJECT', ''),
+            'environment': request.form.get('ENVIRONMENT', '')
         }
 
-    # Save to database
+    print("Received Data:", data)  # Debugging print statement
+
+    # Convert instance_count safely
+    data['instance_count'] = int(data['instance_count']) if str(data['instance_count']).isdigit() else 1
+
+    # Proceed to store in DB
     connection = mysql.connector.connect(**db_config)
     cursor = connection.cursor()
 
     query = """
-    INSERT INTO infra_requests 
+    INSERT INTO infra_requests
     (region, instance_type, ami_id, instance_count, security_group, key_pair, subnet_id, owner, project, environment)
     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
     """
@@ -54,9 +57,11 @@ def submit_request():
         data['security_group'], data['key_pair'], data['subnet_id'],
         data['owner'], data['project'], data['environment']
     )
+
+    print("Inserting into DB:", values)  # Debugging print statement
+
     cursor.execute(query, values)
     connection.commit()
-
     cursor.close()
     connection.close()
 
