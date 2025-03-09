@@ -1,3 +1,6 @@
-Flask
 pymysql
-
+flask
+pymysql
+requests
+mysql-connector-python
+flask-cors
